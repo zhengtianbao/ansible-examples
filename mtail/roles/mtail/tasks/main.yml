@@ -1,0 +1,32 @@
+---
+
+- name: make mtail dir
+  file:
+    path: /app/loan/mtail
+    state: directory
+    mode: '0755'
+
+- name: install mtail
+  copy:
+    src: /root/hujin/mtail
+    dest: /app/loan/mtail/
+
+- name: add execute to mtail
+  command: "chmod +x /app/loan/mtail/mtail"
+
+- name: create mtail prog file
+  template:
+    src: hj.mtail.j2
+    dest: /app/loan/mtail/hj.mtail
+
+- name: get mtail process PID
+  command: "pgrep -f mtail"
+  register: process_pid
+  ignore_errors: yes
+
+- name: stop mtail process
+  command: "kill -9 {{ process_pid.stdout }}"
+
+- name: start mtail process
+  shell: "cd /app/loan/mtail && nohup ./mtail -port 3903 -progs ./hj.mtail -logs \"/app/logs/prometheus/*/*.log\" -vm_logs_runtime_errors=false >/dev/null 2>&1 &"
+

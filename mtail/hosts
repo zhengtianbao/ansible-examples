@@ -1,0 +1,7 @@
+[credit]
+12.103.58.16 ansible_ssh_user=loan ansible_ssh_pass="123456"
+12.103.58.17 ansible_ssh_user=loan ansible_ssh_pass="123456"
+
+[cc]
+12.103.58.18 ansible_ssh_user=loan ansible_ssh_pass="123456"
+12.103.58.19 ansible_ssh_user=loan ansible_ssh_pass="123456"
