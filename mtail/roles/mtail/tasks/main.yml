@@ -10,9 +10,7 @@
   copy:
     src: /root/hujin/mtail
     dest: /app/loan/mtail/
-
-- name: add execute to mtail
-  command: "chmod +x /app/loan/mtail/mtail"
+    mode: a+x
 
 - name: create mtail prog file
   template:
