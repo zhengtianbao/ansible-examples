@@ -208,3 +208,172 @@ postgres=# \q
 ```
 
 至此，greenplum集群搭建完毕，可以通过 `jdbc:postgresql://192.168.122.59:5432/jfbrother` 用户名`gpadmin` 密码`gpadmin` 连接到数据库
+
+## 集群运行中增加segment节点
+
+### 节点说明
+
+| IP              | hostname  | role            | 数据盘  |
+| --------------  | --------- | --------------  | ------ |
+| 192.168.122.59  | mdw       | master, ansible | vda    |
+| 192.168.122.133 | smdw      | standby_master  | vda    |
+| 192.168.122.31  | sdw1      | segment1        | vda    |
+| 192.168.122.104 | sdw2      | segment2        | vda    |
+
+新增节点 192.168.122.104
+
+### 所有节点操作
+
+修改/etc/hosts 添加域名解析
+
+```
+192.168.122.59 mdw
+192.168.122.133 smdw
+192.168.122.31 sdw1
+192.168.122.104 sdw2
+```
+
+### 新增节点操作
+
+安装依赖
+
+```
+# yum install apr apr-util bash bzip2 curl krb5 libcurl libevent libxml2 libyaml zlib openldap openssh openssl openssl-libs perl readline rsync R sed tar zip xfsdump xfsprogs-devel
+```
+
+### ansible节点配置修改
+
+inventory 配置文件
+
+```
+[greenplum_master]
+[greenplum_standby]
+
+[greenplum_segments]
+sdw2
+
+[greenplums]
+sdw2
+```
+
+site.yml
+
+```yaml
+- name: deploy greenplum
+  hosts: greenplums
+  remote_user: root
+  roles:
+    - greenplum
+```
+
+测试ansible节点联通性
+
+```
+[root@mdw ~]# export ANSIBLE_HOST_KEY_CHECKING=False
+[root@mdw ~]# export ANSIBLE_PYTHON_INTERPRETER=/usr/bin/python3
+[root@mdw ~]# ansible -i inventory all -m ping
+```
+
+执行ansible-playbook
+
+```
+[root@mdw ~]# git clone https://github.com/zhengtianbao/ansible-examples.git ansible-examples
+[root@mdw ~]# cd ansible-examples/greenplum
+[root@mdw ~]# ansible-playbook -i inventory site.yml 
+```
+
+至此 初始化sdw2环境完毕，后续需要手动执行操作
+
+### 在master节点操作
+
+新增节点列表
+
+```
+[gpadmin@mdw ~]# cat << EOF > /home/gpadmin/newseg_nodes
+sdw2
+EOF
+```
+
+配置ssh key
+
+```
+[gpadmin@mdw ~]$ source /usr/local/greenplum-db/greenplum_path.sh
+[gpadmin@mdw ~]$ ssh-copy-id -i .ssh/id_rsa.pub gpadmin@sdw2
+[gpadmin@mdw ~]$ gpssh-exkeys -e /home/gpadmin/all_nodes -x /home/gpadmin/newseg_nodes
+```
+
+查看现有集群的配置规则
+
+```
+[gpadmin@mdw ~]$ psql postgres gpadmin
+psql (9.4.26)
+Type "help" for help.
+
+postgres=# select * from gp_segment_configuration;
+ dbid | content | role | preferred_role | mode | status | port | hostname | address |         datadir         
+------+---------+------+----------------+------+--------+------+----------+---------+-------------------------
+    1 |      -1 | p    | p              | n    | u      | 5432 | mdw      | mdw     | /data1/gpmaster/gpseg-1
+    2 |       0 | p    | p              | n    | u      | 6000 | sdw1     | sdw1    | /data1/gpdatap1/gpseg0
+    3 |       1 | p    | p              | n    | u      | 6001 | sdw1     | sdw1    | /data1/gpdatap2/gpseg1
+    4 |      -1 | m    | m              | s    | u      | 5432 | smdw     | smdw    | /data1/gpmaster/gpseg-1
+(4 rows)
+
+postgres=# 
+```
+
+而gpexpand文件每行为：
+
+```
+hostname|address|port|datadir|dbid|content|preferred_role
+
+hostname			主机名
+address				类似主机名
+port				segment监听端口
+datadir			segment data目录,注意是全路径
+dbid				gp集群的唯一ID，可以到gp_segment_configuration中获得，必须顺序累加
+content				可以到gp_segment_configuration中获得，必须顺序累加
+prefered_role		角色(p或m)(primary , mirror)
+```
+
+创建gpexpend配置文件
+
+```
+[gpadmin@mdw ~]$ cat << EOF > gpexpand_inputfile
+sdw2|sdw2|6000|/data1/gpdatap1/gpseg2|5|2|p
+sdw2|sdw2|6001|/data1/gpdatap2/gpseg3|6|3|p
+EOF
+```
+这里sdw2的数据可以通过sdw1的数据推测出来，参考下文最终结果
+
+执行部署
+
+```
+[gpadmin@mdw ~]$ gpexpand -i gpexpand_inputfile
+```
+
+查看状态 
+
+```
+[gpadmin@mdw ~]$ gpstate
+[gpadmin@mdw ~]$ gpstate -x
+```
+
+```
+[gpadmin@mdw ~]$ psql postgres gpadmin
+psql (9.4.26)
+Type "help" for help.
+
+postgres=# select * from gp_segment_configuration;
+ dbid | content | role | preferred_role | mode | status | port | hostname | address |         datadir         
+------+---------+------+----------------+------+--------+------+----------+---------+-------------------------
+    1 |      -1 | p    | p              | n    | u      | 5432 | mdw      | mdw     | /data1/gpmaster/gpseg-1
+    2 |       0 | p    | p              | n    | u      | 6000 | sdw1     | sdw1    | /data1/gpdatap1/gpseg0
+    3 |       1 | p    | p              | n    | u      | 6001 | sdw1     | sdw1    | /data1/gpdatap2/gpseg1
+    4 |      -1 | m    | m              | s    | u      | 5432 | smdw     | smdw    | /data1/gpmaster/gpseg-1
+    5 |       2 | p    | p              | n    | u      | 6000 | sdw2     | sdw2    | /data1/gpdatap1/gpseg2
+    6 |       3 | p    | p              | n    | u      | 6001 | sdw2     | sdw2    | /data1/gpdatap2/gpseg3
+(6 rows)
+
+postgres=# 
+
+```
