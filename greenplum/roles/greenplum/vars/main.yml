@@ -3,7 +3,3 @@ greenplum_disks:
 greenplum_bin: open-source-greenplum-db-6.25.3-rhel8-x86_64
 
 gpadmin_pass: "123456"
-
-greenplum_master: "{{ groups.greenplum_master }}"
-greenplum_standby: "{{ groups.greenplum_standby}}"
-greenplum_segments: "{{ groups.greenplum_segments }}"

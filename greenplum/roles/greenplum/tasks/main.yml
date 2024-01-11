@@ -120,7 +120,7 @@
     state: directory
   with_items:
     - gpmaster
-  when: inventory_hostname in greenplum_master or inventory_hostname in greenplum_standby
+  when: inventory_hostname in groups['greenplum_master'] or inventory_hostname in groups['greenplum_standby']
 
 - name: Create greenplum data node directory
   file:
@@ -193,7 +193,7 @@
     dest: /home/gpadmin/all_nodes
     owner: gpadmin
     group: gpadmin
-  when: inventory_hostname in greenplum_master
+  when: inventory_hostname in groups['greenplum_master']
 
 - name: Scp greenplum seg_nodes
   template:
@@ -201,7 +201,7 @@
     dest: /home/gpadmin/seg_nodes
     owner: gpadmin
     group: gpadmin
-  when: inventory_hostname in greenplum_master
+  when: inventory_hostname in groups['greenplum_master']
 
 - name: Scp greenplum gpinitsystem_config
   template:
@@ -209,7 +209,7 @@
     dest: /home/gpadmin/gpinitsystem_config
     owner: gpadmin
     group: gpadmin
-  when: inventory_hostname in greenplum_master
+  when: inventory_hostname in groups['greenplum_master']
 
 - name: Yum localinstall greenplum
   yum: 
@@ -241,8 +241,8 @@
     state: "{{ item.state  }}"
   with_items:
     - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY=/data1/gpmaster/gpseg-1', state: present  }
-  when: inventory_hostname in greenplum_master
+  when: inventory_hostname in groups['greenplum_master']
 
 - debug:
     msg: >
-        "ansible pre-install completed. connect to master node: {{greenplum_master}} init system."
+        "ansible pre-install completed. connect to master node to init system."

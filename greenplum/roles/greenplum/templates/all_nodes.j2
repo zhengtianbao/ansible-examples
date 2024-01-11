@@ -1,9 +1,9 @@
-{% for master in greenplum_master %}
+{% for master in groups['greenplum_master'] %}
 {{ master }}
 {% endfor %}
-{% for standby in greenplum_standby %}
+{% for standby in groups['greenplum_standby'] %}
 {{ standby }}
 {% endfor %}
-{% for segment in greenplum_segments %}
+{% for segment in groups['greenplum_segments'] %}
 {{ segment }}
 {% endfor %}
