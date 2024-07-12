@@ -43,26 +43,94 @@
     line: "{{ item.line  }}"
     state: "{{ item.state  }}"
   with_items:
-    - { regexp: '^kernel.shmmax', line: 'kernel.shmmax = 500000000', state: present  }
-    - { regexp: '^kernel.shmmni', line: 'kernel.shmmni = 4096', state: present  }
-    - { regexp: '^kernel.shmall', line: 'kernel.shmall = 4000000000', state: present  }
-    - { regexp: '^kernel.sem', line: 'kernel.sem = 250 512000 100 2048', state: present  }
-    - { regexp: '^kernel.sysrq', line: 'kernel.sysrq = 1', state: present  }
-    - { regexp: '^kernel.core_uses_pid', line: 'kernel.core_uses_pid = 1', state: present  }
-    - { regexp: '^kernel.msgmnb', line: 'kernel.msgmnb = 65536', state: present  }
-    - { regexp: '^kernel.msgmax', line: 'kernel.msgmax = 65536', state: present  }
-    - { regexp: '^kernel.msgmni', line: 'kernel.msgmni = 2048', state: present  }
-    - { regexp: '^net.ipv4.tcp_syncookies', line: 'net.ipv4.tcp_syncookies = 1', state: present  }
-    - { regexp: '^net.ipv4.ip_forward', line: 'net.ipv4.ip_forward = 0', state: present  }
-    - { regexp: '^net.ipv4.conf.default.accept_source_route', line: 'net.ipv4.conf.default.accept_source_route = 0', state: present  }
-    - { regexp: '^net.ipv4.tcp_tw_recycle', line: 'net.ipv4.tcp_tw_recycle = 1', state: present  }
-    - { regexp: '^net.ipv4.tcp_max_syn_backlog', line: 'net.ipv4.tcp_max_syn_backlog = 4096', state: present  }
-    - { regexp: '^net.ipv4.conf.all.arp_filter', line: 'net.ipv4.conf.all.arp_filter = 1', state: present  }
-    - { regexp: '^net.ipv4.ip_local_port_range', line: 'net.ipv4.ip_local_port_range = 1025 65535', state: present  }
-    - { regexp: '^net.core.netdev_max_backlog', line: 'net.core.netdev_max_backlog = 10000', state: present  }
-    - { regexp: '^net.core.rmem_max', line: 'net.core.rmem_max = 2097152', state: present  }
-    - { regexp: '^net.core.wmem_max', line: 'net.core.wmem_max = 2097152', state: present  }
-    - { regexp: '^vm.overcommit_memory', line: 'vm.overcommit_memory = 2', state: present  }
+    - {
+        regexp: "^kernel.shmmax",
+        line: "kernel.shmmax = 500000000",
+        state: present,
+      }
+    - { regexp: "^kernel.shmmni", line: "kernel.shmmni = 4096", state: present }
+    - {
+        regexp: "^kernel.shmall",
+        line: "kernel.shmall = 4000000000",
+        state: present,
+      }
+    - {
+        regexp: "^kernel.sem",
+        line: "kernel.sem = 250 512000 100 2048",
+        state: present,
+      }
+    - { regexp: "^kernel.sysrq", line: "kernel.sysrq = 1", state: present }
+    - {
+        regexp: "^kernel.core_uses_pid",
+        line: "kernel.core_uses_pid = 1",
+        state: present,
+      }
+    - {
+        regexp: "^kernel.msgmnb",
+        line: "kernel.msgmnb = 65536",
+        state: present,
+      }
+    - {
+        regexp: "^kernel.msgmax",
+        line: "kernel.msgmax = 65536",
+        state: present,
+      }
+    - { regexp: "^kernel.msgmni", line: "kernel.msgmni = 2048", state: present }
+    - {
+        regexp: "^net.ipv4.tcp_syncookies",
+        line: "net.ipv4.tcp_syncookies = 1",
+        state: present,
+      }
+    - {
+        regexp: "^net.ipv4.ip_forward",
+        line: "net.ipv4.ip_forward = 0",
+        state: present,
+      }
+    - {
+        regexp: "^net.ipv4.conf.default.accept_source_route",
+        line: "net.ipv4.conf.default.accept_source_route = 0",
+        state: present,
+      }
+    - {
+        regexp: "^net.ipv4.tcp_tw_recycle",
+        line: "net.ipv4.tcp_tw_recycle = 1",
+        state: present,
+      }
+    - {
+        regexp: "^net.ipv4.tcp_max_syn_backlog",
+        line: "net.ipv4.tcp_max_syn_backlog = 4096",
+        state: present,
+      }
+    - {
+        regexp: "^net.ipv4.conf.all.arp_filter",
+        line: "net.ipv4.conf.all.arp_filter = 1",
+        state: present,
+      }
+    - {
+        regexp: "^net.ipv4.ip_local_port_range",
+        line: "net.ipv4.ip_local_port_range = 1025 65535",
+        state: present,
+      }
+    - {
+        regexp: "^net.core.netdev_max_backlog",
+        line: "net.core.netdev_max_backlog = 10000",
+        state: present,
+      }
+    - {
+        regexp: "^net.core.rmem_max",
+        line: "net.core.rmem_max = 2097152",
+        state: present,
+      }
+    - {
+        regexp: "^net.core.wmem_max",
+        line: "net.core.wmem_max = 2097152",
+        state: present,
+      }
+    - {
+        regexp: "^vm.overcommit_memory",
+        line: "vm.overcommit_memory = 2",
+        state: present,
+      }
   notify:
     - reload sysctl
 
@@ -102,7 +170,7 @@
     - "{{ greenplum_disks }}"
 
 - name: Chown data directories
-  file: 
+  file:
     path: "{{ item.target }}"
     state: directory
     owner: gpadmin
@@ -133,7 +201,7 @@
     - gpdatap2
     - gpdatam1
     - gpdatam2
-  when: inventory_hostname in greenplum_segments
+  when: inventory_hostname in groups['greenplum_segments']
 
 - name: Set blockdev(read-ahead) 16384
   command: "/sbin/blockdev --setra 16384 /dev/{{ item.dev }}"
@@ -173,7 +241,11 @@
     line: "{{ item.line  }}"
     state: "{{ item.state  }}"
   with_items:
-    - { regexp: '^#MaxStartups 10:30:100', line: 'MaxStartups 200', state: present  }
+    - {
+        regexp: "^#MaxStartups 10:30:100",
+        line: "MaxStartups 200",
+        state: present,
+      }
   notify:
     - reload sshd
 
@@ -212,12 +284,12 @@
   when: inventory_hostname in groups['greenplum_master']
 
 - name: Yum localinstall greenplum
-  yum: 
+  yum:
     name: "/home/gpadmin/{{ greenplum_bin }}.rpm"
     state: installed
 
 - name: Chown greenplum-db directory
-  file: 
+  file:
     path: /usr/local/greenplum-db-6.25.3
     state: directory
     owner: gpadmin
@@ -240,9 +312,13 @@
     line: "{{ item.line  }}"
     state: "{{ item.state  }}"
   with_items:
-    - { regexp: '^export MASTER_DATA_DIRECTORY=', line: 'export MASTER_DATA_DIRECTORY=/data1/gpmaster/gpseg-1', state: present  }
+    - {
+        regexp: "^export MASTER_DATA_DIRECTORY=",
+        line: "export MASTER_DATA_DIRECTORY=/data1/gpmaster/gpseg-1",
+        state: present,
+      }
   when: inventory_hostname in groups['greenplum_master']
 
 - debug:
     msg: >
-        "ansible pre-install completed. connect to master node to init system."
+      "ansible pre-install completed. connect to master node to init system."
